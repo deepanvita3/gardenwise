@@ -25,7 +25,17 @@
 @media(max-width:680px){.forecast-days{grid-template-columns:repeat(3,1fr)}}
 .planner-tabs{display:flex;gap:8px;margin:0 0 16px}.planner-tab{border:1px solid var(--line);border-radius:11px;padding:11px 16px;background:#fff;color:var(--muted);font-size:13px;font-weight:750}.planner-tab.selected{background:var(--green);color:white;border-color:var(--green)}.completion-date{font-size:11px;color:var(--green2);font-weight:700;margin-top:5px}.history-item{padding:11px 0;border-bottom:1px solid var(--line)}.history-item:last-child{border-bottom:0}.history-item strong{font-size:12px}.history-item small{display:block;margin-top:4px;color:var(--muted);font-size:11px}
 </style>
-</head>
+<style>
+#gwAuthGate{position:fixed;inset:0;z-index:99999;background:#faf9f4;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif}
+#gwAuthGate .gwPanel{background:white;border:1px solid #dfe9dd;border-radius:18px;padding:28px;width:min(100%,440px);box-shadow:0 10px 40px #21332a14}
+#gwAuthGate input{width:100%;margin:8px 0 14px;padding:12px;border:1px solid #cbd9ce;border-radius:8px;font-size:15px}
+#gwAuthGate button,.gwAccount button{background:#245c43;color:white;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+#gwAuthGate button:disabled{opacity:.5;cursor:wait}
+#gwAuthGate .gwSwitch{background:transparent;color:#245c43;text-decoration:underline}
+#gwAuthMsg{min-height:25px;font-size:13px;color:#8c322d}
+.gwAccount{position:fixed;right:14px;bottom:14px;z-index:9000;background:white;border:1px solid #dfe9dd;border-radius:12px;padding:10px;box-shadow:0 6px 20px #0001;font:12px system-ui;max-width:300px}
+.gwAccount button{font-size:12px;padding:6px 9px;margin-left:8px}
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script></head>
 <body>
 <div class="app">
 <aside class="sidebar">
@@ -105,9 +115,9 @@
 <div class="modal-backdrop" id="groupEditModal"><div class="modal"><h2>Edit plant group ✎</h2><p>Update the shared plant name, variety, and category for every plant in this group. Individual nicknames, locations, and care records stay unchanged.</p><form id="groupEditForm"><div class="field"><label for="groupName">Plant name *</label><input id="groupName" required></div><div class="field"><label for="groupVariety">Variety</label><input id="groupVariety" placeholder="Optional"></div><div class="field"><label for="groupType">Category</label><select id="groupType"><option>Fruit</option><option>Berry</option><option>Flower</option><option>Vegetable</option><option>Herb</option><option>Houseplant</option><option>Other</option></select></div><div class="modal-actions"><button class="secondary" type="button" onclick="closeModal('groupEditModal')">Cancel</button><button class="primary" type="submit">Save group changes</button></div></form></div></div>
 <div class="modal-backdrop" id="deleteModal"><div class="modal"><h2 id="deleteTitle">Remove this plant?</h2><p id="deleteDescription">This plant will be removed from My Garden. Existing journal entries will be retained.</p><div class="modal-actions"><button class="secondary" onclick="closeModal('deleteModal')">Cancel</button><button class="primary" style="background:#9f3b31" id="confirmDeleteButton" onclick="confirmDeletePlant()">Remove plant</button></div></div></div>
 <div class="modal-backdrop" id="journalModal"><div class="modal"><h2>New garden observation 📔</h2><p>What did you notice or do in your garden today?</p><form id="journalForm"><div class="field"><label for="journalPlant">Plant</label><select id="journalPlant"></select></div><div class="field"><label for="journalText">Observation *</label><textarea id="journalText" rows="4" required placeholder="e.g., Soil felt damp after yesterday's rain…"></textarea></div><div class="modal-actions"><button type="button" class="secondary" onclick="closeModal('journalModal')">Cancel</button><button class="primary" type="submit">Save observation</button></div></form></div></div>
-<div class="toast" id="toast"></div>
+<div id="gwAuthGate"><div class="gwPanel"><h2 style="color:#245c43;margin:0 0 8px">🌱 GardenWise</h2><p id="gwAuthIntro">Sign in to save your personal garden securely.</p><form id="gwAuthForm"><label>Email<input id="gwEmail" type="email" autocomplete="email" required></label><label>Password<input id="gwPassword" type="password" autocomplete="current-password" minlength="6" required></label><button id="gwAuthSubmit" type="submit">Sign in</button><button id="gwAuthSwitch" class="gwSwitch" type="button">Create an account</button></form><p id="gwAuthMsg" role="status"></p><p style="font-size:12px;color:#667">Each account has a private garden. The AI chat is a demo, not a live AI service.</p></div></div><div class="gwAccount" id="gwAccount" hidden><span id="gwAccountEmail"></span><span id="gwSaveStatus"></span><button id="gwSignOut">Sign out</button></div><div class="toast" id="toast"></div>
 <script>
-const plants=[
+let plants=[
 {id:1,name:"Blueberry bush",variety:"Variety not recorded",type:"Berry",location:"Backyard · sunny bed",emoji:"🫐",art:"blue",status:"Check soil",notes:"Check soil moisture and acidity if growth seems poor."},
 {id:2,name:"Hydrangea",variety:"Variety not recorded",type:"Flower",location:"Garden border",emoji:"🌸",art:"pink",status:"Looking good",notes:"Observe leaf condition and soil moisture."},
 {id:3,name:"Apple tree",variety:"Variety not recorded",type:"Fruit",location:"Backyard · in ground",emoji:"🍎",art:"",status:"Seasonal check",notes:"Review tree health and local seasonal guidance."},
@@ -257,7 +267,7 @@ const file=document.getElementById('newPlantPhoto').files[0];
 const wasEditing=editingPlantId!==null;
 const previousId=editingPlantId;
 if(editingPlantId!==null){const p=plants.find(x=>x.id===editingPlantId);if(p){const oldName=p.name;Object.assign(p,{...extra,name,type,location,notes,emoji:plantEmoji[type]||'🌱',art:type==='Flower'?'pink':type==='Berry'?'blue':''});if(!plants.some(other=>other.id!==p.id&&other.name===oldName))tasks.forEach(t=>{if(t.plant===oldName)t.plant=name})}}else{plants.push({...extra,id:Math.max(0,...plants.map(p=>p.id))+1,name,type,location,emoji:plantEmoji[type]||'🌱',art:type==='Flower'?'pink':type==='Berry'?'blue':'',status:'New plant',notes})}const currentPlant=wasEditing?plants.find(x=>x.id===previousId):plants[plants.length-1];
-if(file&&currentPlant){const reader=new FileReader();reader.onload=()=>{currentPlant.photo=reader.result;renderPlants();if(selectedPlantId===currentPlant.id)renderPlantDetail()};reader.readAsDataURL(file)}
+if(file&&currentPlant){const reader=new FileReader();reader.onload=()=>{currentPlant.photo=reader.result;renderPlants();if(selectedPlantId===currentPlant.id)renderPlantDetail();gwScheduleSave()};reader.readAsDataURL(file)}
 closeModal('plantModal');resetPlantForm();updateStats();renderPlants();renderPlanner();showToast(name+(wasEditing?' updated.':' added to your garden.'));if(wasEditing&&selectedPlantId===previousId){renderPlantDetail();navigate('detail')}else navigate('garden')});
 document.getElementById('journalForm').addEventListener('submit',e=>{e.preventDefault();const id=Number(document.getElementById('journalPlant').value);const p=plants.find(x=>x.id===id);journal.unshift({emoji:p?.emoji||'🌿',plant:p?.name||'Whole garden',text:document.getElementById('journalText').value.trim(),date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})});closeModal('journalModal');e.target.reset();updateStats();renderJournal();showToast('Observation saved in this demo.');if(document.getElementById('page-detail').classList.contains('active'))renderPlantDetail();else navigate('journal')});
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -336,6 +346,88 @@ setWeatherStatus('Dated forecast snapshot · attempting live update…');
 renderDashboardTasks();renderPlants();renderPlanner();renderJournal();updateStats();
 showSnapshotWeather();
 loadCityWeather();
+
+/* Supabase public client key is safe in browser; authorization is enforced by RLS. */
+const gwClient = window.supabase?.createClient('https://jnoodefltigmqgleeppr.supabase.co','sb_publishable_bBLvtMRFqYaFl2ymoDBQAQ_4ZpmmMQP');
+let gwUser=null,gwReady=false,gwBusy=false,gwSaveTimer=null,gwSavedSnapshot='',gwMode='signin',gwLoadGeneration=0;
+const gwGate=document.getElementById('gwAuthGate'),gwMessage=document.getElementById('gwAuthMsg');
+const gwStatus=document.getElementById('gwSaveStatus');
+function gwSnapshot(){return JSON.stringify({plants,tasks,journal})}
+function gwRefresh(){selectedPlantId=null;expandedGroups.clear();updateStats();renderDashboardTasks();renderPlants();renderPlanner();renderJournal();navigate('dashboard')}
+async function gwLoad(user){
+  const generation=++gwLoadGeneration;gwReady=false;gwUser=user;gwGate.style.display='flex';
+  gwMessage.textContent='Loading your private garden…';
+  const {data,error}=await gwClient.from('garden_state').select('plants,tasks,journal').eq('user_id',user.id).maybeSingle();
+  if(generation!==gwLoadGeneration)return;
+  if(error){gwMessage.textContent='Could not load your garden: '+error.message;return}
+  plants=Array.isArray(data?.plants)?data.plants:[];
+  tasks=Array.isArray(data?.tasks)?data.tasks:[];
+  journal=Array.isArray(data?.journal)?data.journal:[];
+  gwSavedSnapshot=gwSnapshot();gwReady=true;
+  document.getElementById('gwAccountEmail').textContent=user.email||'Signed in';
+  document.getElementById('gwAccount').hidden=false;
+  gwStatus.textContent=' · Saved';
+  gwGate.style.display='none';gwRefresh();
+}
+async function gwSave(){
+  if(!gwReady||!gwUser||gwBusy)return;
+  const snapshot=gwSnapshot();if(snapshot===gwSavedSnapshot)return;
+  gwBusy=true;gwStatus.textContent=' · Saving…';
+  const currentUser=gwUser.id;
+  const state=JSON.parse(snapshot);
+  const {error}=await gwClient.from('garden_state').upsert({user_id:currentUser,...state,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  gwBusy=false;
+  if(error){gwStatus.textContent=' · Save failed: '+error.message;return}
+  gwSavedSnapshot=snapshot;gwStatus.textContent=' · Saved';
+  if(gwReady&&gwUser?.id===currentUser&&gwSnapshot()!==snapshot)gwScheduleSave();
+}
+function gwScheduleSave(){if(!gwReady)return;clearTimeout(gwSaveTimer);gwSaveTimer=setTimeout(gwSave,700)}
+document.addEventListener('click',e=>{if(e.target.closest('#gwAuthGate,#gwAccount'))return;setTimeout(gwScheduleSave,0)},true);
+document.addEventListener('submit',e=>{if(e.target.id==='gwAuthForm')return;setTimeout(gwScheduleSave,100)},true);
+document.addEventListener('change',e=>{if(e.target.closest('#gwAuthGate'))return;setTimeout(gwScheduleSave,100)},true);
+document.addEventListener('load',e=>{if(e.target.tagName==='IMG')gwScheduleSave()},true);
+document.getElementById('gwAuthSwitch').onclick=()=>{
+  gwMode=gwMode==='signin'?'signup':'signin';
+  document.getElementById('gwAuthSubmit').textContent=gwMode==='signin'?'Sign in':'Create account';
+  document.getElementById('gwAuthSwitch').textContent=gwMode==='signin'?'Create an account':'Already have an account? Sign in';
+  gwMessage.textContent='';
+};
+document.getElementById('gwAuthForm').onsubmit=async e=>{
+  e.preventDefault();if(!gwClient){gwMessage.textContent='Supabase library failed to load. Check your internet connection.';return}
+  const email=document.getElementById('gwEmail').value.trim(),password=document.getElementById('gwPassword').value;
+  const btn=document.getElementById('gwAuthSubmit');btn.disabled=true;gwMessage.textContent='Please wait…';
+  try{
+    const result=gwMode==='signup'
+      ?await gwClient.auth.signUp({email,password,options:{emailRedirectTo:'https://deepanvita3.github.io/gardenwise/'}})
+      :await gwClient.auth.signInWithPassword({email,password});
+    if(result.error)throw result.error;
+    if(result.data.session){await gwLoad(result.data.user)}
+    else gwMessage.textContent='Check your email for a confirmation link, then return here and sign in.';
+  }catch(err){gwMessage.textContent=err.message||'Authentication failed'}
+  finally{btn.disabled=false}
+};
+document.getElementById('gwSignOut').onclick=async()=>{
+  if(!gwClient)return;
+  clearTimeout(gwSaveTimer);
+  await gwSave();
+  const {error}=await gwClient.auth.signOut();
+  if(error){gwStatus.textContent=' · Sign-out failed: '+error.message;return}
+  gwUser=null;gwReady=false;gwLoadGeneration++;gwSavedSnapshot='';
+  plants=[];tasks=[];journal=[];gwRefresh();
+  document.getElementById('gwAccount').hidden=true;gwGate.style.display='flex';gwMessage.textContent='';
+};
+async function gwBoot(){
+ if(!gwClient){gwMessage.textContent='Unable to load Supabase. Check your connection and refresh.';return}
+ const {data,error}=await gwClient.auth.getUser();
+ if(error&&!/session missing/i.test(error.message||'')){gwMessage.textContent=error.message;return}
+ if(data?.user)await gwLoad(data.user);else gwMessage.textContent='Sign in or create an account to get started.';
+ gwClient.auth.onAuthStateChange((event,session)=>{
+  if(event==='SIGNED_OUT'){gwReady=false;gwUser=null;gwGate.style.display='flex';document.getElementById('gwAccount').hidden=true}
+  if(event==='SIGNED_IN'&&session?.user&&(!gwUser||gwUser.id!==session.user.id))setTimeout(()=>gwLoad(session.user),0);
+ });
+}
+gwBoot();
+
 </script>
 </body>
 </html>
