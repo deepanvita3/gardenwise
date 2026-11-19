@@ -51,6 +51,63 @@ body:has(.modal-backdrop.open){overflow:hidden;}
 #plantModal .modal-actions button{flex:1;min-height:44px;}
 }
 </style>
+<style>
+/* App-wide responsive layout */
+.app{grid-template-columns:245px minmax(0,1fr)}
+.grid>*,.detail-grid>*,.chat-layout>*,.title-row>div,.hero-copy,.panel,.group-card,.plant-card,.journal-entry>div:last-child,.detail-hero>div:last-child,.planner-item>div,.top-right,.crumb{min-width:0}
+.panel,.group-card,.plant-card,.detail-hero,.bubble,.journal-entry,.planner-item,.weather-pill,.gwAccount{overflow-wrap:anywhere}
+img{max-width:100%}
+.title-row,.panel-head,.plant-bottom,.planner-tabs,.task,.weather-top{flex-wrap:wrap}
+.title-row>button{flex-shrink:0}
+.stat-icon,.avatar,.bot-icon,.logo{flex-shrink:0}
+.stats,.forecast-days,.quick-actions,.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stats,.forecast-days{grid-template-columns:repeat(3,minmax(0,1fr))}
+.planner-item{grid-template-columns:65px minmax(0,1fr) auto}
+.chat-side{min-width:0}
+.chat-body{min-height:0;overflow-y:auto;max-height:60vh}
+.gwAccount{position:static;display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px;max-width:none;box-shadow:none;border-radius:0;border:0;border-bottom:1px solid var(--line);padding:8px 20px;background:white}
+.gwAccount[hidden]{display:none}
+.gwAccount button{margin-left:0}
+#gwAuthGate{overflow-y:auto;align-items:safe center}
+#gwAuthGate .gwPanel{min-width:0;max-height:100%;overflow-y:auto}
+.toast{max-width:calc(100% - 24px);width:max-content;z-index:11000;overflow-wrap:anywhere}
+.modal-actions{flex-wrap:wrap}
+@media(max-width:1000px){
+.app{grid-template-columns:205px minmax(0,1fr)}
+.chat-side{display:block}
+.chat-side .prompt-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.group-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:680px){
+.app{display:block;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+.topbar{height:auto;min-height:62px;gap:10px;flex-wrap:wrap;padding:12px 15px}
+.top-right{max-width:100%}
+.weather-pill{max-width:100%}
+.mobile-nav button{min-width:0;flex:1;min-height:44px;padding:3px 2px;overflow-wrap:anywhere}
+.gwAccount{justify-content:flex-start;padding:8px 15px;font-size:11px}
+.gwAccount button{min-height:36px;margin-left:auto}
+.toast{bottom:calc(82px + env(safe-area-inset-bottom))}
+.detail-grid,.planner-item{grid-template-columns:minmax(0,1fr)}
+.planner-item{grid-template-columns:52px minmax(0,1fr)}
+.planner-item .tag{white-space:normal;min-height:32px}
+.chat-panel{min-height:380px}
+.chat-input input,.search,.weather-controls input{font-size:16px}
+.chat-input button,.primary,.secondary,.quick,.planner-tab,.group-toggle{min-height:44px}
+#plantFilter{max-width:100%!important;flex:1 1 100%!important}
+.detail-actions button{min-height:44px}
+}
+@media(max-width:420px){
+.content{padding-left:12px;padding-right:12px}
+.plant-grid,.chat-side .prompt-list{grid-template-columns:minmax(0,1fr)}
+.detail-hero{flex-direction:column}
+.detail-illustration{width:100%;height:145px}
+.detail-row{gap:8px}
+.planner-tab{padding:10px;flex:1}
+.forecast-days{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stat-card{padding:10px 7px}
+.group-member .group-actions{width:100%;justify-content:flex-end}
+}
+</style>
 </head>
 <body>
 <div class="app">
@@ -67,6 +124,7 @@ body:has(.modal-backdrop.open){overflow:hidden;}
 </aside>
 <main class="main">
 <header class="topbar"><div class="crumb">GardenWise <span style="padding:0 7px;color:#b3beb4">/</span> <b id="crumbPage">Dashboard</b></div><div class="top-right"><div class="weather-pill">☁️ <span id="weatherLabel">Local weather · demo</span></div><div class="avatar">GW</div></div></header>
+<div class="gwAccount" id="gwAccount" hidden><span id="gwAccountEmail"></span><span id="gwSaveStatus"></span><button id="gwSignOut">Sign out</button></div>
 <div class="content">
 <section class="page active" id="page-dashboard">
   <div class="eyebrow">Tuesday, October 27 · Demo garden</div>
@@ -131,7 +189,7 @@ body:has(.modal-backdrop.open){overflow:hidden;}
 <div class="modal-backdrop" id="groupEditModal"><div class="modal"><h2>Edit plant group ✎</h2><p>Update the shared plant name, variety, and category for every plant in this group. Individual nicknames, locations, and care records stay unchanged.</p><form id="groupEditForm"><div class="field"><label for="groupName">Plant name *</label><input id="groupName" required></div><div class="field"><label for="groupVariety">Variety</label><input id="groupVariety" placeholder="Optional"></div><div class="field"><label for="groupType">Category</label><select id="groupType"><option>Fruit</option><option>Berry</option><option>Flower</option><option>Vegetable</option><option>Herb</option><option>Houseplant</option><option>Other</option></select></div><div class="modal-actions"><button class="secondary" type="button" onclick="closeModal('groupEditModal')">Cancel</button><button class="primary" type="submit">Save group changes</button></div></form></div></div>
 <div class="modal-backdrop" id="deleteModal"><div class="modal"><h2 id="deleteTitle">Remove this plant?</h2><p id="deleteDescription">This plant will be removed from My Garden. Existing journal entries will be retained.</p><div class="modal-actions"><button class="secondary" onclick="closeModal('deleteModal')">Cancel</button><button class="primary" style="background:#9f3b31" id="confirmDeleteButton" onclick="confirmDeletePlant()">Remove plant</button></div></div></div>
 <div class="modal-backdrop" id="journalModal"><div class="modal"><h2>New garden observation 📔</h2><p>What did you notice or do in your garden today?</p><form id="journalForm"><div class="field"><label for="journalPlant">Plant</label><select id="journalPlant"></select></div><div class="field"><label for="journalText">Observation *</label><textarea id="journalText" rows="4" required placeholder="e.g., Soil felt damp after yesterday's rain…"></textarea></div><div class="modal-actions"><button type="button" class="secondary" onclick="closeModal('journalModal')">Cancel</button><button class="primary" type="submit">Save observation</button></div></form></div></div>
-<div id="gwAuthGate"><div class="gwPanel"><h2 style="color:#245c43;margin:0 0 8px">🌱 GardenWise</h2><p id="gwAuthIntro">Sign in to save your personal garden securely.</p><form id="gwAuthForm"><label>Email<input id="gwEmail" type="email" autocomplete="email" required></label><label>Password<input id="gwPassword" type="password" autocomplete="current-password" minlength="6" required></label><button id="gwAuthSubmit" type="submit">Sign in</button><button id="gwAuthSwitch" class="gwSwitch" type="button">Create an account</button></form><p id="gwAuthMsg" role="status"></p><p style="font-size:12px;color:#667">Each account has a private garden. The AI chat is a demo, not a live AI service.</p></div></div><div class="gwAccount" id="gwAccount" hidden><span id="gwAccountEmail"></span><span id="gwSaveStatus"></span><button id="gwSignOut">Sign out</button></div><div class="toast" id="toast"></div>
+<div id="gwAuthGate"><div class="gwPanel"><h2 style="color:#245c43;margin:0 0 8px">🌱 GardenWise</h2><p id="gwAuthIntro">Sign in to save your personal garden securely.</p><form id="gwAuthForm"><label>Email<input id="gwEmail" type="email" autocomplete="email" required></label><label>Password<input id="gwPassword" type="password" autocomplete="current-password" minlength="6" required></label><button id="gwAuthSubmit" type="submit">Sign in</button><button id="gwAuthSwitch" class="gwSwitch" type="button">Create an account</button></form><p id="gwAuthMsg" role="status"></p><p style="font-size:12px;color:#667">Each account has a private garden. The AI chat is a demo, not a live AI service.</p></div></div><div class="toast" id="toast"></div>
 <script>
 let plants=[
 {id:1,name:"Blueberry bush",variety:"Variety not recorded",type:"Berry",location:"Backyard · sunny bed",emoji:"🫐",art:"blue",status:"Check soil",notes:"Check soil moisture and acidity if growth seems poor."},
