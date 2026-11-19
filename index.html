@@ -108,7 +108,7 @@ img{max-width:100%}
 .group-member .group-actions{width:100%;justify-content:flex-end}
 }
 </style>
-</head>
+<style>#gwAuthGate .gwPasswordRow{display:flex;align-items:center;gap:8px;margin:8px 0 14px}#gwAuthGate .gwPasswordRow input{flex:1;min-width:0;margin:0}#gwAuthGate #gwPasswordToggle{background:#e9f3e9;color:#245c43;min-height:44px;flex-shrink:0;padding:10px 12px}</style></head>
 <body>
 <div class="app">
 <aside class="sidebar">
@@ -189,7 +189,7 @@ img{max-width:100%}
 <div class="modal-backdrop" id="groupEditModal"><div class="modal"><h2>Edit plant group ✎</h2><p>Update the shared plant name, variety, and category for every plant in this group. Individual nicknames, locations, and care records stay unchanged.</p><form id="groupEditForm"><div class="field"><label for="groupName">Plant name *</label><input id="groupName" required></div><div class="field"><label for="groupVariety">Variety</label><input id="groupVariety" placeholder="Optional"></div><div class="field"><label for="groupType">Category</label><select id="groupType"><option>Fruit</option><option>Berry</option><option>Flower</option><option>Vegetable</option><option>Herb</option><option>Houseplant</option><option>Other</option></select></div><div class="modal-actions"><button class="secondary" type="button" onclick="closeModal('groupEditModal')">Cancel</button><button class="primary" type="submit">Save group changes</button></div></form></div></div>
 <div class="modal-backdrop" id="deleteModal"><div class="modal"><h2 id="deleteTitle">Remove this plant?</h2><p id="deleteDescription">This plant will be removed from My Garden. Existing journal entries will be retained.</p><div class="modal-actions"><button class="secondary" onclick="closeModal('deleteModal')">Cancel</button><button class="primary" style="background:#9f3b31" id="confirmDeleteButton" onclick="confirmDeletePlant()">Remove plant</button></div></div></div>
 <div class="modal-backdrop" id="journalModal"><div class="modal"><h2>New garden observation 📔</h2><p>What did you notice or do in your garden today?</p><form id="journalForm"><div class="field"><label for="journalPlant">Plant</label><select id="journalPlant"></select></div><div class="field"><label for="journalText">Observation *</label><textarea id="journalText" rows="4" required placeholder="e.g., Soil felt damp after yesterday's rain…"></textarea></div><div class="modal-actions"><button type="button" class="secondary" onclick="closeModal('journalModal')">Cancel</button><button class="primary" type="submit">Save observation</button></div></form></div></div>
-<div id="gwAuthGate"><div class="gwPanel"><h2 style="color:#245c43;margin:0 0 8px">🌱 GardenWise</h2><p id="gwAuthIntro">Sign in to save your personal garden securely.</p><form id="gwAuthForm"><label>Email<input id="gwEmail" type="email" autocomplete="email" required></label><label>Password<input id="gwPassword" type="password" autocomplete="current-password" minlength="6" required></label><button id="gwAuthSubmit" type="submit">Sign in</button><button id="gwAuthSwitch" class="gwSwitch" type="button">Create an account</button></form><p id="gwAuthMsg" role="status"></p><p style="font-size:12px;color:#667">Each account has a private garden. The AI chat is a demo, not a live AI service.</p></div></div><div class="toast" id="toast"></div>
+<div id="gwAuthGate"><div class="gwPanel"><h2 style="color:#245c43;margin:0 0 8px">🌱 GardenWise</h2><p id="gwAuthIntro">Sign in to save your personal garden securely.</p><form id="gwAuthForm"><label>Email<input id="gwEmail" type="email" autocomplete="email" required></label><label for="gwPassword">Password</label><div class="gwPasswordRow"><input id="gwPassword" type="password" autocomplete="current-password" minlength="6" required><button type="button" id="gwPasswordToggle" aria-label="Show password" aria-pressed="false">Show</button></div><button id="gwAuthSubmit" type="submit">Sign in</button><button id="gwAuthSwitch" class="gwSwitch" type="button">Create an account</button></form><p id="gwAuthMsg" role="status"></p><p style="font-size:12px;color:#667">Each account has a private garden. The AI chat is a demo, not a live AI service.</p></div></div><div class="toast" id="toast"></div>
 <script>
 let plants=[
 {id:1,name:"Blueberry bush",variety:"Variety not recorded",type:"Berry",location:"Backyard · sunny bed",emoji:"🫐",art:"blue",status:"Check soil",notes:"Check soil moisture and acidity if growth seems poor."},
@@ -422,7 +422,7 @@ showSnapshotWeather();
 loadCityWeather();
 
 /* Supabase public client key is safe in browser; authorization is enforced by RLS. */
-const gwClient = window.supabase?.createClient('https://jnoodefltigmqgleeppr.supabase.co','sb_publishable_bBLvtMRFqYaFl2ymoDBQAQ_4ZpmmMQP');
+const gwClient = window.supabase?.createClient('https://jnoodefltigmqgleeppr.supabase.co','sb_publishable_bBLvtMRFqYaFl2ymoDBQAQ_4ZpmmMQP',{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let gwUser=null,gwReady=false,gwBusy=false,gwSaveTimer=null,gwSavedSnapshot='',gwMode='signin',gwLoadGeneration=0;
 const gwGate=document.getElementById('gwAuthGate'),gwMessage=document.getElementById('gwAuthMsg');
 const gwStatus=document.getElementById('gwSaveStatus');
@@ -460,8 +460,11 @@ document.addEventListener('click',e=>{if(e.target.closest('#gwAuthGate,#gwAccoun
 document.addEventListener('submit',e=>{if(e.target.id==='gwAuthForm')return;setTimeout(gwScheduleSave,100)},true);
 document.addEventListener('change',e=>{if(e.target.closest('#gwAuthGate'))return;setTimeout(gwScheduleSave,100)},true);
 document.addEventListener('load',e=>{if(e.target.tagName==='IMG')gwScheduleSave()},true);
+const gwPassword=document.getElementById('gwPassword'),gwPasswordToggle=document.getElementById('gwPasswordToggle');
+function gwSetPasswordVisible(visible){gwPassword.type=visible?'text':'password';gwPasswordToggle.textContent=visible?'Hide':'Show';gwPasswordToggle.setAttribute('aria-label',visible?'Hide password':'Show password');gwPasswordToggle.setAttribute('aria-pressed',String(visible))}
+gwPasswordToggle.onclick=()=>gwSetPasswordVisible(gwPassword.type==='password');
 document.getElementById('gwAuthSwitch').onclick=()=>{
-  gwMode=gwMode==='signin'?'signup':'signin';
+  gwMode=gwMode==='signin'?'signup':'signin';gwSetPasswordVisible(false);gwPassword.autocomplete=gwMode==='signup'?'new-password':'current-password';
   document.getElementById('gwAuthSubmit').textContent=gwMode==='signin'?'Sign in':'Create account';
   document.getElementById('gwAuthSwitch').textContent=gwMode==='signin'?'Create an account':'Already have an account? Sign in';
   gwMessage.textContent='';
@@ -475,7 +478,7 @@ document.getElementById('gwAuthForm').onsubmit=async e=>{
       ?await gwClient.auth.signUp({email,password,options:{emailRedirectTo:'https://deepanvita3.github.io/gardenwise/'}})
       :await gwClient.auth.signInWithPassword({email,password});
     if(result.error)throw result.error;
-    if(result.data.session){await gwLoad(result.data.user)}
+    if(result.data.session){gwPassword.value='';gwSetPasswordVisible(false);await gwLoad(result.data.user)}
     else gwMessage.textContent='Check your email for a confirmation link, then return here and sign in.';
   }catch(err){gwMessage.textContent=err.message||'Authentication failed'}
   finally{btn.disabled=false}
@@ -492,12 +495,21 @@ document.getElementById('gwSignOut').onclick=async()=>{
 };
 async function gwBoot(){
  if(!gwClient){gwMessage.textContent='Unable to load Supabase. Check your connection and refresh.';return}
- const {data,error}=await gwClient.auth.getUser();
- if(error&&!/session missing/i.test(error.message||'')){gwMessage.textContent=error.message;return}
- if(data?.user)await gwLoad(data.user);else gwMessage.textContent='Sign in or create an account to get started.';
+ const form=document.getElementById('gwAuthForm');
+ form.hidden=true;gwMessage.textContent='Restoring your session…';
+ try{
+  const {data,error}=await gwClient.auth.getSession();
+  if(error)throw error;
+  if(data.session){
+   const verified=await gwClient.auth.getUser();
+   if(verified.error)throw verified.error;
+   if(verified.data.user)await gwLoad(verified.data.user);
+  }else gwMessage.textContent='Sign in or create an account to get started.';
+ }catch(err){gwMessage.textContent='Could not restore your session. Refresh to retry, or sign in again. '+(err.message||'');}
+ finally{form.hidden=false}
  gwClient.auth.onAuthStateChange((event,session)=>{
-  if(event==='SIGNED_OUT'){gwReady=false;gwUser=null;gwGate.style.display='flex';document.getElementById('gwAccount').hidden=true}
-  if(event==='SIGNED_IN'&&session?.user&&(!gwUser||gwUser.id!==session.user.id))setTimeout(()=>gwLoad(session.user),0);
+  if(event==='SIGNED_OUT'){gwReady=false;gwUser=null;gwLoadGeneration++;clearTimeout(gwSaveTimer);plants=[];tasks=[];journal=[];gwRefresh();gwGate.style.display='flex';document.getElementById('gwAccount').hidden=true;gwPassword.value='';gwSetPasswordVisible(false)}
+  if(event==='SIGNED_IN'&&session?.user&&(!gwUser||gwUser.id!==session.user.id))setTimeout(()=>{if(!gwUser||gwUser.id!==session.user.id)gwLoad(session.user)},0);
  });
 }
 gwBoot();
