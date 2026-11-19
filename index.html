@@ -35,7 +35,23 @@
 #gwAuthMsg{min-height:25px;font-size:13px;color:#8c322d}
 .gwAccount{position:fixed;right:14px;bottom:14px;z-index:9000;background:white;border:1px solid #dfe9dd;border-radius:12px;padding:10px;box-shadow:0 6px 20px #0001;font:12px system-ui;max-width:300px}
 .gwAccount button{font-size:12px;padding:6px 9px;margin-left:8px}
-</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script></head>
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script><style>
+/* Responsive dialogs: keep every field and action reachable on small screens. */
+.modal-backdrop{z-index:10000;overflow-y:auto;overscroll-behavior:contain;padding:clamp(10px,3vw,24px);}
+.modal-backdrop .modal{min-width:0;max-height:calc(100vh - 2 * clamp(10px,3vw,24px));max-height:calc(100dvh - 2 * clamp(10px,3vw,24px));overflow-y:auto;overscroll-behavior:contain;flex-shrink:0;}
+#plantModal .modal{width:min(640px,100%);}
+#plantModal .field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+#plantModal .field,#plantModal input,#plantModal select,#plantModal textarea{min-width:0;max-width:100%;}
+#plantModal .modal-actions{position:sticky;bottom:0;background:white;padding:12px 0 4px;border-top:1px solid var(--line);flex-wrap:wrap;}
+body:has(.modal-backdrop.open){overflow:hidden;}
+@media(max-width:520px){
+.modal-backdrop .modal{padding:16px;border-radius:14px;}
+#plantModal .field-grid{grid-template-columns:minmax(0,1fr);}
+.modal-backdrop input,.modal-backdrop select,.modal-backdrop textarea{font-size:16px;}
+#plantModal .modal-actions button{flex:1;min-height:44px;}
+}
+</style>
+</head>
 <body>
 <div class="app">
 <aside class="sidebar">
