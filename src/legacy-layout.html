@@ -1,0 +1,80 @@
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="logo">✿</div><div><div class="brand-name">GardenWise</div><div class="brand-sub">Your garden, understood.</div></div></div>
+  <div><div class="nav-label">Workspace</div><nav class="nav" id="sideNav">
+    <button class="active" data-page="dashboard"><span class="ico">⌂</span>Dashboard</button>
+    <button data-page="garden"><span class="ico">♧</span>My Garden</button>
+    <button data-page="copilot"><span class="ico">✳</span>AI Copilot</button>
+    <button data-page="planner"><span class="ico">▦</span>Garden Planner</button>
+    <button data-page="journal"><span class="ico">▤</span>Garden Journal</button>
+  </nav></div>
+  <div class="side-bottom"><strong>🌱 A little garden wisdom</strong><p>Great gardens grow with observation, patience, and small consistent steps.</p><button class="small-btn" onclick="navigate('journal')">Add an observation</button></div>
+</aside>
+<main class="main">
+<header class="topbar"><div class="crumb">GardenWise <span style="padding:0 7px;color:#b3beb4">/</span> <b id="crumbPage">Dashboard</b></div><div class="top-right"><div class="weather-pill">☁️ <span id="weatherLabel">Local weather · demo</span></div><div class="avatar">GW</div></div></header>
+<div class="gwAccount" id="gwAccount" hidden><span id="gwAccountEmail"></span><span id="gwSaveStatus"></span><button id="gwSignOut">Sign out</button></div>
+<div class="content">
+<section class="page active" id="page-dashboard">
+  <div class="eyebrow">Tuesday, October 27 · Demo garden</div>
+  <div class="title-row"><div><h1>Good afternoon, gardener 🌿</h1><p>Your garden is a work in progress. Here's a little guidance for today.</p></div><button class="primary" onclick="openModal('plantModal')">＋ Add a plant</button></div>
+  <div class="hero"><div class="hero-copy"><div class="eyebrow">YOUR GARDEN, THIS WEEK</div><h2>Small steps make a thriving garden.</h2><p>Check in with your plants, capture what you notice, and get recommendations tailored to your garden. Your first step: observe before you act.</p><button class="primary" onclick="navigate('planner')">View this week's plan&nbsp; →</button></div><div class="hero-stat"><div class="big" id="plantCountHero">6</div><div class="label">plants in your garden</div></div></div>
+  <div class="grid stats">
+    <div class="stat-card"><div class="stat-icon">🌿</div><div><div class="stat-num" id="plantCount">6</div><div class="stat-label">Plants tracked</div></div></div>
+    <div class="stat-card"><div class="stat-icon">☑️</div><div><div class="stat-num" id="taskCount">3</div><div class="stat-label">Tasks to review</div></div></div>
+    <div class="stat-card"><div class="stat-icon">📔</div><div><div class="stat-num" id="journalCount">2</div><div class="stat-label">Garden notes</div></div></div>
+  </div>
+  <div class="grid two-col">
+    <div class="panel"><div class="panel-head"><h3>Today's garden priorities</h3><button class="text-btn" onclick="navigate('planner')">See planner →</button></div><div class="task-list" id="dashboardTasks"></div></div>
+    <div class="panel"><div class="panel-head"><h3>Quick actions</h3><span style="font-size:18px">✦</span></div><div class="weather-box">
+<div class="weather-top"><div><div style="font-size:11px;color:var(--muted)">LIVE LOCAL FORECAST</div><div class="weather-temp" id="weatherTemp">— °F</div></div><div style="font-size:31px">🌦️</div></div>
+<div class="weather-meta" id="weatherMeta">Enter a city to load the forecast.</div>
+<div class="weather-controls"><input id="weatherCity" placeholder="City, e.g. Lynnwood, WA" value="Lynnwood, WA"><button class="small-btn" onclick="loadCityWeather()">Update</button></div>
+<div id="weatherStatus" style="font-size:11px;color:var(--muted)" role="status"></div>
+<div class="forecast-days" id="forecastDays"></div>
+<div class="weather-note" id="weatherNote">Recommendations use forecast rainfall as a signal, not a substitute for checking soil moisture.</div>
+</div>
+<div class="panel-head"><h3>💧 Watering recommendations</h3></div>
+<div id="wateringAdvice"><p style="font-size:12px;color:var(--muted)">Load weather to see plant-by-plant guidance.</p></div>
+<div class="quick-actions"><button class="quick" onclick="navigate('copilot')"><span>✳️</span>Ask GardenWise</button><button class="quick" onclick="openModal('journalModal')"><span>📷</span>Log an observation</button><button class="quick" onclick="navigate('garden')"><span>🌱</span>View my plants</button><button class="quick" onclick="navigate('planner')"><span>📅</span>Plan my week</button></div></div>
+  </div>
+</section>
+<section class="page" id="page-garden">
+  <div class="eyebrow">Your personal plant collection</div><div class="title-row"><div><h1>My Garden 🌱</h1><p>Keep your plants, growing conditions, and care notes in one place.</p></div><button class="primary" onclick="openModal('plantModal')">＋ Add a plant</button></div>
+  <div class="search-row"><input class="search" id="plantSearch" placeholder="Search your plants…" oninput="renderPlants()"><select class="search" style="max-width:190px;flex:0 0 auto" id="plantFilter" onchange="renderPlants()"><option value="all">All plants</option><option value="Fruit">Fruit trees</option><option value="Berry">Berries</option><option value="Flower">Flowers</option><option value="Vegetable">Vegetables & herbs</option></select></div>
+  <div class="group-grid" id="plantGrid"></div>
+</section>
+<section class="page" id="page-detail">
+<div style="margin-bottom:16px"><button class="text-btn" onclick="navigate('garden')">← Back to My Garden</button></div>
+<div id="plantDetailContent"></div>
+</section>
+<section class="page" id="page-copilot">
+  <div class="eyebrow">Personalized gardening help</div><div class="title-row"><div><h1>Ask GardenWise ✳️</h1><p>Ask a question about your garden. This prototype demonstrates the conversation experience with sample responses.</p></div></div>
+  <div class="chat-layout"><div class="panel chat-panel"><div class="chat-header"><div class="bot-icon">🌿</div><div><h3>Your Gardening Copilot</h3><div class="online">● Prototype mode · sample guidance</div></div></div><div class="chat-body" id="chatBody"><div class="bubble bot">Hi there! I'm GardenWise. I can help you think through plant care, seasonal tasks, and garden planning. What are you noticing in your garden today?<small>GardenWise · demo assistant</small></div></div><form class="chat-input" id="chatForm"><input id="chatInput" placeholder="Ask about your garden…" autocomplete="off"><button class="primary" type="submit">Send ↑</button></form></div>
+  <aside class="panel chat-side"><div class="panel-head"><h3>Try asking</h3></div><div class="prompt-list"><button class="prompt" onclick="askPrompt('What should I check in my garden this week?')">🌦️ What should I check this week?</button><button class="prompt" onclick="askPrompt('My blueberry leaves are turning yellow. What should I check?')">🫐 Why are my blueberry leaves yellow?</button><button class="prompt" onclick="askPrompt('Help me prepare my garden for winter.')">🍂 Help me prepare for winter</button><button class="prompt" onclick="askPrompt('What information should I track about my plants?')">📔 What should I track?</button></div><div style="margin-top:20px;padding:13px;background:#f5f7f0;border-radius:12px;font-size:11px;line-height:1.5;color:#617166"><b>About this prototype</b><br>Responses are illustrative, not generated by a live AI model. Plant problems can have multiple causes; verify important advice with a trusted horticultural source.</div></aside></div>
+</section>
+<section class="page" id="page-planner">
+  <div class="eyebrow">Seasonal care, made personal</div><div class="title-row"><div><h1>Garden Planner 📅</h1><p>Track upcoming and completed tasks. Completion history is saved for this browser session only.</p></div><button class="secondary" onclick="showToast('Weekly plan refreshed in this demo.')">↻ Refresh plan</button></div>
+  <div class="panel" style="margin-bottom:17px;background:#f1f6ec"><div class="panel-head"><h3>🍂 Late autumn garden check-in</h3><span class="tag low">Seasonal guide</span></div><p style="font-size:12px;color:#617166;line-height:1.6;margin:0">Use this list as a starting point, not a universal schedule. Timing depends on your plant varieties, local weather, and growing conditions.</p></div>
+  <div class="planner-tabs" role="group" aria-label="Task status"><button id="upcomingTab" class="planner-tab selected" onclick="setPlannerTab('upcoming')">Upcoming <span id="upcomingCount"></span></button><button id="completedTab" class="planner-tab" onclick="setPlannerTab('completed')">Completed <span id="completedCount"></span></button></div><div class="planner-list" id="plannerList"></div>
+</section>
+<section class="page" id="page-journal">
+  <div class="eyebrow">Notice, record, learn</div><div class="title-row"><div><h1>Garden Journal 📔</h1><p>Capture small observations so you can learn what works over time.</p></div><button class="primary" onclick="openModal('journalModal')">＋ New observation</button></div>
+  <div class="panel"><div class="panel-head"><h3>Recent observations</h3><span class="tag low" id="entryCountTag">2 entries</span></div><div id="journalList"></div></div>
+</section>
+</div>
+</main>
+</div>
+<nav class="mobile-nav" id="mobileNav"><button class="active" data-page="dashboard"><span>⌂</span>Home</button><button data-page="garden"><span>♧</span>Plants</button><button data-page="copilot"><span>✳</span>Ask AI</button><button data-page="planner"><span>▦</span>Plan</button><button data-page="journal"><span>▤</span>Journal</button></nav>
+<div class="modal-backdrop" id="plantModal"><div class="modal"><h2 id="plantModalTitle">Add a plant 🌱</h2><p>Start with what you know. You can fill in more details later.</p><form id="plantForm"><div class="field"><label for="newPlantName">Plant name *</label><input id="newPlantName" required placeholder="e.g., Meyer lemon tree"></div><div class="field"><label for="newPlantType">Plant category</label><select id="newPlantType"><option>Fruit</option><option>Berry</option><option>Flower</option><option>Vegetable</option><option>Herb</option><option>Houseplant</option><option>Other</option></select></div><div class="field"><label for="newPlantLocation">Where is it growing?</label><input id="newPlantLocation" placeholder="e.g., Patio container"></div><div class="field"><label for="newPlantNotes">Notes (optional)</label><textarea id="newPlantNotes" rows="2" placeholder="Variety, planting date, concerns…"></textarea></div><div class="field"><label for="newPlantNickname">Nickname (optional)</label><input id="newPlantNickname" placeholder="e.g., Apple tree near fence"></div>
+<div class="field-grid">
+<div class="field"><label for="newPlantVariety">Variety</label><input id="newPlantVariety" placeholder="Optional"></div>
+<div class="field"><label for="newPlantDate">Planting date</label><input type="date" id="newPlantDate"></div>
+<div class="field"><label for="newPlantSun">Sun exposure</label><select id="newPlantSun"><option value="">Not recorded</option><option>Full sun</option><option>Partial sun</option><option>Partial shade</option><option>Full shade</option></select></div>
+<div class="field"><label for="newPlantSetting">Growing setting</label><select id="newPlantSetting"><option value="">Not recorded</option><option>In ground</option><option>Raised bed</option><option>Container</option><option>Indoors</option></select></div>
+<div class="field"><label for="newPlantWater">Watering notes</label><input id="newPlantWater" placeholder="Optional"></div>
+<div class="field"><label for="newPlantSoil">Soil / drainage notes</label><input id="newPlantSoil" placeholder="Optional"></div>
+</div><div class="field"><label for="newPlantPhoto">Plant photo</label><input id="newPlantPhoto" type="file" accept="image/*"></div><div class="modal-actions"><button type="button" class="secondary" onclick="closeModal('plantModal')">Cancel</button><button class="primary" id="plantSaveButton" type="submit">Add plant</button></div></form></div></div>
+<div class="modal-backdrop" id="groupEditModal"><div class="modal"><h2>Edit plant group ✎</h2><p>Update the shared plant name, variety, and category for every plant in this group. Individual nicknames, locations, and care records stay unchanged.</p><form id="groupEditForm"><div class="field"><label for="groupName">Plant name *</label><input id="groupName" required></div><div class="field"><label for="groupVariety">Variety</label><input id="groupVariety" placeholder="Optional"></div><div class="field"><label for="groupType">Category</label><select id="groupType"><option>Fruit</option><option>Berry</option><option>Flower</option><option>Vegetable</option><option>Herb</option><option>Houseplant</option><option>Other</option></select></div><div class="modal-actions"><button class="secondary" type="button" onclick="closeModal('groupEditModal')">Cancel</button><button class="primary" type="submit">Save group changes</button></div></form></div></div>
+<div class="modal-backdrop" id="deleteModal"><div class="modal"><h2 id="deleteTitle">Remove this plant?</h2><p id="deleteDescription">This plant will be removed from My Garden. Existing journal entries will be retained.</p><div class="modal-actions"><button class="secondary" onclick="closeModal('deleteModal')">Cancel</button><button class="primary" style="background:#9f3b31" id="confirmDeleteButton" onclick="confirmDeletePlant()">Remove plant</button></div></div></div>
+<div class="modal-backdrop" id="journalModal"><div class="modal"><h2>New garden observation 📔</h2><p>What did you notice or do in your garden today?</p><form id="journalForm"><div class="field"><label for="journalPlant">Plant</label><select id="journalPlant"></select></div><div class="field"><label for="journalText">Observation *</label><textarea id="journalText" rows="4" required placeholder="e.g., Soil felt damp after yesterday's rain…"></textarea></div><div class="modal-actions"><button type="button" class="secondary" onclick="closeModal('journalModal')">Cancel</button><button class="primary" type="submit">Save observation</button></div></form></div></div>
+<div id="gwAuthGate"><div class="gwPanel"><h2 style="color:#245c43;margin:0 0 8px">🌱 GardenWise</h2><p id="gwAuthIntro">Sign in to save your personal garden securely.</p><form id="gwAuthForm"><label>Email<input id="gwEmail" type="email" autocomplete="email" required></label><label for="gwPassword">Password</label><div class="gwPasswordRow"><input id="gwPassword" type="password" autocomplete="current-password" minlength="6" required><button type="button" id="gwPasswordToggle" aria-label="Show password" aria-pressed="false">Show</button></div><button id="gwAuthSubmit" type="submit">Sign in</button><button id="gwAuthSwitch" class="gwSwitch" type="button">Create an account</button></form><p id="gwAuthMsg" role="status"></p><p style="font-size:12px;color:#667">Each account has a private garden. The AI chat is a demo, not a live AI service.</p></div></div><div class="toast" id="toast"></div>
