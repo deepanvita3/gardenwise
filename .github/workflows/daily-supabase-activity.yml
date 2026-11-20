@@ -1,0 +1,33 @@
+name: GardenWise daily database activity
+on:
+  schedule:
+    - cron: '17 15 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gardenwise-activity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Make three read-only Supabase database requests
+        shell: bash
+        env:
+          SUPABASE_URL: https://jnoodefltigmqgleeppr.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_bBLvtMRFqYaFl2ymoDBQAQ_4ZpmmMQP
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            echo "Read-only database request $attempt of 3"
+            curl --fail-with-body --silent --show-error --max-time 25 \
+              --get "$SUPABASE_URL/rest/v1/garden_state" \
+              --data-urlencode "select=user_id" \
+              --data-urlencode "limit=1" \
+              -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+              -H "Accept: application/json" \
+              -o /dev/null
+            sleep 3
+          done
+          echo "GardenWise database endpoint responded successfully."
