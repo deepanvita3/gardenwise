@@ -1,0 +1,21 @@
+import {useEffect,useRef,useState} from 'react';
+import type {Plant} from './types';
+interface Forecast{location:string;temp:number;days:{date:string;high:number;low:number;rain:number;chance:number}[]}
+export function Weather({plants}:{plants:Plant[]}){
+ const [city,setCity]=useState('Lynnwood, WA'),[forecast,setForecast]=useState<Forecast|null>(null),[status,setStatus]=useState('');
+ const requestId=useRef(0);
+ async function load(){const request=++requestId.current;setStatus('Checking live forecast…');try{
+ let p: {name:string;admin1?:string;latitude:number;longitude:number}|undefined;
+ if(/^lynnwood\s*,?\s*(wa|washington)?$/i.test(city.trim()))p={name:'Lynnwood',admin1:'Washington',latitude:47.8209,longitude:-122.3151};
+ else{
+ const geo=await fetch('https://geocoding-api.open-meteo.com/v1/search?'+new URLSearchParams({name:city.split(',')[0].trim(),count:'10',language:'en'}));if(!geo.ok)throw Error('Location lookup failed');
+ const options=(await geo.json()).results||[];const region=city.split(',')[1]?.trim().toLowerCase();
+ p=options.find((x:{admin1?:string;country?:string})=>region&&[x.admin1,x.country].some(v=>v?.toLowerCase()===region))||options[0];
+ }
+ if(!p)throw Error('City not found');
+ const r=await fetch('https://api.open-meteo.com/v1/forecast?'+new URLSearchParams({latitude:String(p.latitude),longitude:String(p.longitude),current:'temperature_2m',daily:'temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max',temperature_unit:'fahrenheit',precipitation_unit:'inch',timezone:'auto',forecast_days:'7'}));if(!r.ok)throw Error('Forecast unavailable');const d=await r.json();if(request!==requestId.current)return;setForecast({location:[p.name,p.admin1].filter(Boolean).join(', '),temp:Math.round(d.current.temperature_2m),days:d.daily.time.slice(0,6).map((date:string,i:number)=>({date,high:d.daily.temperature_2m_max[i],low:d.daily.temperature_2m_min[i],rain:d.daily.precipitation_sum[i],chance:d.daily.precipitation_probability_max[i]}))});setStatus('Live forecast · Open-Meteo');
+ }catch(e){if(request!==requestId.current)return;setForecast(null);setStatus(e instanceof Error?e.message:'Weather unavailable')}}
+ useEffect(()=>{void load();return ()=>{requestId.current++}},[]);
+ const rain=forecast?.days.slice(0,2).reduce((a,d)=>a+d.rain,0)??0;
+ return <><div className="weather-box"><div className="weather-temp">{forecast?forecast.temp+' °F':'— °F'}</div><div className="weather-meta">{forecast?.location}</div><form className="weather-controls" onSubmit={e=>{e.preventDefault();void load()}}><input aria-label="City" value={city} onChange={e=>setCity(e.target.value)} required/><button className="small-btn">Update</button></form><p role="status">{status}</p><div className="forecast-days">{forecast?.days.map(d=><div className="forecast-day" key={d.date}><strong>{new Date(d.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'})}</strong>{Math.round(d.high)}° / {Math.round(d.low)}°<div>🌧 {d.rain.toFixed(2)}″</div>{d.chance}% chance</div>)}</div></div><h3>💧 Watering recommendations</h3>{plants.map(p=>{const sheltered=p.type==='Houseplant'||/indoor|container|pot|patio/i.test((p.setting||'')+' '+(p.location||''));return <div className="water-row" key={p.id}><b>{p.nickname||p.name}</b><p>{!forecast?'Forecast unavailable. Check soil moisture.':sheltered?'Check potting mix; outdoor rain may not reach this plant.':rain>=.2?'Rain forecast. Likely skip watering if root zone is moist.':'Check soil at root depth before watering.'}</p>{forecast?.days.slice(0,3).some(d=>d.low<=32)&&!sheltered&&<p>Freezing temperatures possible; check frost-sensitive plants.</p>}</div>})}</>
+}

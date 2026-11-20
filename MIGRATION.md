@@ -1,0 +1,3 @@
+# GardenWise React migration
+
+Native React/TypeScript screens now replace the transitional adapter. Original HTML remains on main and html-legacy. Existing Supabase garden_state schema is unchanged. Copilot remains sample responses. Styling is plain CSS. Run npm install, npm run build and npm run dev; commit generated lockfile before production. Verify login, refresh, CRUD, photo, planner, journal, forecast and responsive layouts, then configure GitHub Pages to deploy Vite dist through Actions. Avoid simultaneous editing in both versions (whole-garden last writer wins). No build or browser test has yet been run.
