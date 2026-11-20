@@ -10,7 +10,41 @@ export function useGarden(){
  const {data:{subscription}}=client.auth.onAuthStateChange((event,session)=>{if(event==='INITIAL_SESSION'||event==='SIGNED_IN'||event==='SIGNED_OUT')setTimeout(()=>void load(session?.user||null),0)});
  return ()=>{stopped=true;subscription.unsubscribe()}
  },[]);
- useEffect(()=>{if(!ready||!user)return;const snapshot=JSON.stringify(garden),id=user.id;if(snapshot===saved.current)return;setStatus('Saving…');queue.current=queue.current.then(async()=>{if(active.current!==id)return;const {error}=await client.from('garden_state').upsert({user_id:id,...JSON.parse(snapshot),updated_at:new Date().toISOString()},{onConflict:'user_id'});if(active.current!==id)return;if(error){setStatus('Save failed: '+error.message);return}saved.current=snapshot;setStatus('Saved')}).catch(e=>setStatus('Save failed: '+String(e)))},[garden,ready,user]);
- async function signOut(){await queue.current;if(JSON.stringify(garden)!==saved.current&&ready){setStatus('Unsaved changes. Resolve the save error before signing out.');return}const {error}=await client.auth.signOut();if(error)setStatus(error.message)}
- return {user,garden,setGarden,ready,loading,status,signOut};
+ function queueSave(snapshot:string,id:string,g:number){
+  queue.current=queue.current.then(async()=>{
+   if(generation.current!==g||snapshot===saved.current)return;
+   setStatus('Saving…');
+   const {error}=await client.from('garden_state').upsert({user_id:id,...JSON.parse(snapshot),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+   if(generation.current!==g)return;
+   if(error)throw error;
+   saved.current=snapshot;
+   setStatus('Saved');
+  }).catch(error=>{if(generation.current===g)setStatus('Save failed: '+error.message)});
+  return queue.current;
+ }
+ useEffect(()=>{
+  if(!ready||!user)return;
+  const snapshot=JSON.stringify(garden);
+  void queueSave(snapshot,user.id,generation.current);
+  function warn(event:BeforeUnloadEvent){
+   if(snapshot!==saved.current){event.preventDefault();event.returnValue=''}
+  }
+  window.addEventListener('beforeunload',warn);
+  return ()=>window.removeEventListener('beforeunload',warn);
+ },[garden,ready,user]);
+ const [signingOut,setSigningOut]=useState(false);
+ async function signOut(){
+  setSigningOut(true);
+  try{
+   const snapshot=JSON.stringify(garden);
+   if(ready&&user){
+    await queue.current;
+    if(snapshot!==saved.current)await queueSave(snapshot,user.id,generation.current);
+    if(snapshot!==saved.current)return;
+   }
+   const {error}=await client.auth.signOut();
+   if(error)setStatus(error.message);
+  }finally{setSigningOut(false)}
+ }
+ return {user,garden,setGarden,ready,loading,status,signingOut,signOut};
 }
